@@ -16,21 +16,16 @@
  * this program; if not, write to the Free Software Foundation, Inc., 51
  * Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
-package net.pms.io.iokit;
+package net.pms.util.jna;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import net.pms.util.jna.JnaIntEnum;
-import net.pms.util.jna.JnaEnumTypeMapper;
-import net.pms.util.jna.JnaLongEnum;
-import net.pms.util.jna.StringByReference;
-import net.pms.util.jna.UTF16StringByReference;
 import com.sun.jna.Library;
 import com.sun.jna.Memory;
 import com.sun.jna.Native;
+import com.sun.jna.NativeLibrary;
 import com.sun.jna.NativeLong;
 import com.sun.jna.Pointer;
 import com.sun.jna.PointerType;
@@ -69,9 +64,16 @@ public interface CoreFoundation extends Library {
 			put(Library.OPTION_TYPE_MAPPER, new JnaEnumTypeMapper());
 		}
 	});
-    CoreFoundation INSTANCE = (CoreFoundation) Native.loadLibrary("CoreFoundation", CoreFoundation.class, options);
+    final CoreFoundation INSTANCE = (CoreFoundation) Native.loadLibrary("CoreFoundation", CoreFoundation.class, options);
 
-    static final CFAllocatorRef ALLOCATOR = INSTANCE.CFAllocatorGetDefault();
+    final CFAllocatorRef ALLOCATOR = INSTANCE.CFAllocatorGetDefault();
+    final NativeLibrary NATIVE_LIBRARY_INSTANCE = NativeLibrary.getInstance("CoreFoundation");
+	/**
+	 * Predefined {@code CFArrayCallBacks} structure containing a set of
+	 * callbacks appropriate for use when the values in a {@code CFArray} are
+	 * all {@code CFTypes}.
+	 */
+    final Pointer kCFTypeArrayCallBacks = NATIVE_LIBRARY_INSTANCE.getGlobalVariableAddress("kCFTypeArrayCallBacks");
 
 	/**
 	 * Returns the type identifier for the {@code CFNull} opaque type.
@@ -233,6 +235,9 @@ public interface CoreFoundation extends Library {
 
 		@Override
 		public String toString() {
+			if (getPointer() == null) {
+				return "null";
+			}
 			CFStringRef description = INSTANCE.CFCopyDescription(this);
 			try {
 				return description.toString();
@@ -252,35 +257,49 @@ public interface CoreFoundation extends Library {
 			super(p);
 		}
 
+		/**
+		 * Use this as a substitute for cast from any {@link CFTypeRef}
+		 * instance.
+		 * <p>
+		 * {@link CFTypeRef} can't be cast to {@link CFNumberRef} if gotten from
+		 * native code because {@link PointerType#fromNative} don't know the
+		 * "real" type and thus calls {@link CFTypeRef}'s constructor instead of
+		 * {@link CFNumberRef}'s constructor. This instantiates a new
+		 * {@link CFNumberRef} and transfers the {@link Pointer} to achieve the
+		 * same result.
+		 *
+		 * @param cfNumber the {@link CFTypeRef} to "cast" to {@link CFNumberRef}.
+		 * @return The {@link CFNumberRef} instance.
+		 */
 		public CFNumberRef(CFTypeRef cfNumber) {
-			super(cfNumber.getPointer());
+			super(cfNumber == null ? null : cfNumber.getPointer());
 		}
 
-    	public static CFNumberRef toCFNumber(byte value) {
+    	public static CFNumberRef toCFNumberRef(byte value) {
     		return INSTANCE.CFNumberCreate(ALLOCATOR, CFNumberType.kCFNumberSInt8Type, new ByteByReference(value));
     	}
 
-    	public static CFNumberRef toCFNumber(short value) {
+    	public static CFNumberRef toCFNumberRef(short value) {
     		return INSTANCE.CFNumberCreate(ALLOCATOR, CFNumberType.kCFNumberSInt16Type, new ShortByReference(value));
     	}
 
-    	public static CFNumberRef toCFNumber(int value) {
+    	public static CFNumberRef toCFNumberRef(int value) {
     		return INSTANCE.CFNumberCreate(ALLOCATOR, CFNumberType.kCFNumberSInt32Type, new IntByReference(value));
     	}
 
-    	public static CFNumberRef toCFNumber(long value) {
+    	public static CFNumberRef toCFNumberRef(long value) {
     		return INSTANCE.CFNumberCreate(ALLOCATOR, CFNumberType.kCFNumberSInt64Type, new LongByReference(value));
     	}
 
-    	public static CFNumberRef toCFNumber(char value) {
+    	public static CFNumberRef toCFNumberRef(char value) {
     		return INSTANCE.CFNumberCreate(ALLOCATOR, CFNumberType.kCFNumberCharType, new ShortByReference((short) value));
     	}
 
-    	public static CFNumberRef toCFNumber(float value) {
+    	public static CFNumberRef toCFNumberRef(float value) {
     		return INSTANCE.CFNumberCreate(ALLOCATOR, CFNumberType.kCFNumberFloat32Type, new FloatByReference(value));
     	}
 
-    	public static CFNumberRef toCFNumber(double value) {
+    	public static CFNumberRef toCFNumberRef(double value) {
     		return INSTANCE.CFNumberCreate(ALLOCATOR, CFNumberType.kCFNumberFloat64Type, new DoubleByReference(value));
     	}
 
@@ -488,6 +507,139 @@ public interface CoreFoundation extends Library {
     long CFArrayGetTypeID();
 
 	/**
+	 * Creates a new immutable array with the given values.
+	 * <p>
+	 * References are owned if created by functions including "Create" or "Copy"
+	 * and must be released with {@link #CFRelease} to avoid leaking references.
+	 *
+	 * @param allocator the {@code CFAllocator} to use to allocate memory for
+	 *            the new object. Pass {@code null} or
+	 *            {@link #kCFAllocatorDefault} to use the default allocator.
+	 * @param values a C array of the pointer-sized values to be in the new
+	 *            array. The values in the new array are ordered in the same
+	 *            order in which they appear in this C array. This value may be
+	 *            {@code null} if {@code numValues} is 0. This C array is not
+	 *            changed or freed by this function. If {@code values} is not a
+	 *            valid {@link Pointer} to a C array of at least
+	 *            {@code numValues} elements, the behavior is undefined.
+	 * @param numValues the number of values to copy from {@code values} into
+	 *            the new array. This number will be the count of the new array
+	 *            — it must not be negative or greater than the number of
+	 *            elements in {@code values}.
+	 * @param callBacks a {@link Pointer} to a {@code CFArrayCallBacks}
+	 *            structure initialized with the callbacks for the array to use
+	 *            on each value in the collection. The retain callback is used
+	 *            within this function, for example, to retain all of the new
+	 *            values from {@code values}. A copy of the contents of the
+	 *            callbacks structure is made, so that a pointer to a structure
+	 *            on the stack can be passed in or can be reused for multiple
+	 *            collection creations. This value may be {@code null}, which is
+	 *            treated as if a valid structure of version 0 with all fields
+	 *            {@code null} had been passed in. Otherwise, if any of the
+	 *            fields are not valid pointers to functions of the correct
+	 *            type, or this value is not a valid pointer to a
+	 *            {@code CFArrayCallBacks} structure, the behavior is undefined.
+	 *            If any value put into the collection is not one understood by
+	 *            one of the callback functions, the behavior when that callback
+	 *            function is used is undefined. If the collection contains only
+	 *            {@code CFType} objects, then pass a pointer to
+	 *            {@link #kCFTypeArrayCallBacks} to use the default callback
+	 *            functions.
+	 * @return A new immutable array containing {@code numValues} from
+	 *         {@code values}, or {@code null} if there was a problem creating
+	 *         the object. Ownership follows the <a href=
+	 *         "https://developer.apple.com/library/content/documentation/CoreFoundation/Conceptual/CFMemoryMgmt/Concepts/Ownership.html#//apple_ref/doc/uid/20001148-103029"
+	 *         >The Create Rule</a>.
+	 */
+    CFArrayRef CFArrayCreate(CFAllocatorRef allocator, CFTypeArrayRef values, long numValues, Pointer callBacks);
+
+	/**
+	 * Creates a new immutable array with the values from another array.
+	 * <p>
+	 * References are owned if created by functions including "Create" or "Copy"
+	 * and must be released with {@link #CFRelease} to avoid leaking references.
+	 * <p>
+	 * The pointer values from {@code theArray} are copied into the new array;
+	 * the values are also retained by the new array. The count of the new array
+	 * is the same as {@code theArray}. The new array uses the same callbacks as
+	 * {@code theArray}.
+	 *
+	 * @param allocator the {@code CFAllocator} to use to allocate memory for
+	 *            the new object. Pass {@code null} or
+	 *            {@link #kCFAllocatorDefault} to use the default allocator.
+	 * @param theArray the array to copy.
+	 * @return A new {@code CFArray} object that contains the same values as
+	 *         {@code theArray}. Ownership follows the <a href=
+	 *         "https://developer.apple.com/library/content/documentation/CoreFoundation/Conceptual/CFMemoryMgmt/Concepts/Ownership.html#//apple_ref/doc/uid/20001148-103029"
+	 *         >The Create Rule</a>.
+	 */
+    CFArrayRef CFArrayCreateCopy(CFAllocatorRef allocator, CFArrayRef theArray);
+
+	/**
+	 * Creates a new empty mutable array.
+	 * <p>
+	 * References are owned if created by functions including "Create" or "Copy"
+	 * and must be released with {@link #CFRelease} to avoid leaking references.
+	 *
+	 * @param allocator the {@code CFAllocator} to use to allocate memory for
+	 *            the new object. Pass {@code null} or
+	 *            {@link #kCFAllocatorDefault} to use the default allocator.
+	 * @param capacity the maximum number of values that can be contained by the
+	 *            new array. The array starts empty and can grow to this number
+	 *            of values (and it can have less). Pass 0 to specify that the
+	 *            maximum capacity is not limited. The value must not be
+	 *            negative.
+	 * @param callBacks a {@link Pointer} to a {@code CFArrayCallBacks}
+	 *            structure initialized with the callbacks for the array to use
+	 *            on each value in the array. A copy of the contents of the
+	 *            callbacks structure is made, so that a pointer to a structure
+	 *            on the stack can be passed in or can be reused for multiple
+	 *            array creations. If the array contains {@code CFType} objects
+	 *            only, then pass {@link #kCFTypeArrayCallBacks} to use the
+	 *            default callback functions. This parameter may be {@code null}
+	 *            , which is treated as if a valid structure of version 0 with
+	 *            all fields {@code null} had been passed in. If any of the
+	 *            fields are not valid pointers to functions of the correct
+	 *            type, or this parameter is not a valid pointer to a
+	 *            {@code CFArrayCallBacks} structure, the behavior is undefined.
+	 *            If any value put into the array is not one understood by one
+	 *            of the callback functions, the behavior when that callback
+	 *            function is used is undefined.
+	 * @return A new mutable array, or {@code null} if there was a problem
+	 *         creating the object. Ownership follows the <a href=
+	 *         "https://developer.apple.com/library/content/documentation/CoreFoundation/Conceptual/CFMemoryMgmt/Concepts/Ownership.html#//apple_ref/doc/uid/20001148-103029"
+	 *         >The Create Rule</a>.
+	 */
+    CFMutableArrayRef CFArrayCreateMutable(CFAllocatorRef allocator, long capacity, Pointer callBacks);
+
+	/**
+	 * Creates a new mutable array with the values from another array.
+	 * <p>
+	 * References are owned if created by functions including "Create" or "Copy"
+	 * and must be released with {@link #CFRelease} to avoid leaking references.
+	 *
+	 * @param allocator the {@code CFAllocator} to use to allocate memory for
+	 *            the new object. Pass {@code null} or
+	 *            {@link #kCFAllocatorDefault} to use the default allocator.
+	 * @param capacity the maximum number of values that can be contained by the
+	 *            new array. The array starts with the same number of values as
+	 *            {@code theArray} and can grow to this number of values (and it
+	 *            can have less). Pass 0 to specify that the maximum capacity is
+	 *            not limited. If non-0, capacity must be greater than or equal
+	 *            to the count of {@code theArray}.
+	 * @param theArray the array to copy. The {@link Pointer} values from the
+	 *            array are copied into the new array. However, the values are
+	 *            also retained by the new array.
+	 * @return A new mutable array that contains the same values as
+	 *         {@code theArray}. The new array has the same count as the
+	 *         {@code theArray} and uses the same callbacks. Ownership follows
+	 *         the <a href=
+	 *         "https://developer.apple.com/library/content/documentation/CoreFoundation/Conceptual/CFMemoryMgmt/Concepts/Ownership.html#//apple_ref/doc/uid/20001148-103029"
+	 *         >The Create Rule</a>.
+	 */
+    CFMutableArrayRef CFArrayCreateMutableCopy(CFAllocatorRef allocator, long capacity, CFArrayRef theArray);
+
+	/**
 	 * Returns the number of values currently in the array.
 	 *
 	 * @param theArray The array to be queried. If this parameter is not a valid
@@ -615,8 +767,22 @@ public interface CoreFoundation extends Library {
         	super(p);
 		}
 
+		/**
+		 * Use this as a substitute for cast from any {@link CFTypeRef}
+		 * instance.
+		 * <p>
+		 * {@link CFTypeRef} can't be cast to {@link CFStringRef} if gotten from
+		 * native code because {@link PointerType#fromNative} don't know the
+		 * "real" type and thus calls {@link CFTypeRef}'s constructor instead of
+		 * {@link CFStringRef}'s constructor. This instantiates a new
+		 * {@link CFStringRef} and transfers the {@link Pointer} to achieve the
+		 * same result.
+		 *
+		 * @param cfString the {@link CFTypeRef} to "cast" to {@link CFStringRef}.
+		 * @return The {@link CFStringRef} instance.
+		 */
         public CFStringRef(CFTypeRef cfString) {
-        	super(cfString.getPointer());
+        	super(cfString == null ? null : cfString.getPointer());
         }
 
         /**
@@ -625,7 +791,7 @@ public interface CoreFoundation extends Library {
          * @param string the source string.
          * @return A reference to a CFString representing s
          */
-        public static CFStringRef toCFString(String string) {
+        public static CFStringRef toCFStringRef(String string) {
             final char[] chars = string.toCharArray();
             int length = chars.length;
             return INSTANCE.CFStringCreateWithCharacters(null, chars, length);
@@ -644,25 +810,7 @@ public interface CoreFoundation extends Library {
 			);
 			StringByReference buffer = new StringByReference(maxSize);
 			INSTANCE.CFStringGetCString(this, buffer, maxSize, CFStringBuiltInEncodings.kCFStringEncodingUTF8.getValue());
-			return buffer.getValue(StandardCharsets.UTF_8);
-		}
-
-		/**
-		 * Use this as a substitute for cast from any {@link CFTypeRef}
-		 * instance.
-		 * <p>
-		 * {@link CFTypeRef} can't be cast to {@link CFStringRef} if gotten from
-		 * native code because {@link PointerType#fromNative} don't know the
-		 * "real" type and thus calls {@link CFTypeRef}'s constructor instead of
-		 * {@link CFStringRef}'s constructor. This instantiates a new
-		 * {@link CFStringRef} and transfers the {@link Pointer} to achieve the
-		 * same result.
-		 *
-		 * @param cfType the {@link CFTypeRef} to "cast" to {@link CFStringRef}.
-		 * @return The {@link CFStringRef} instance.
-		 */
-		public static CFStringRef toCFStringRef(CFTypeRef cfType) {
-			return new CFStringRef(cfType == null ? null : cfType.getPointer());
+			return "\"" + buffer.getValue(StandardCharsets.UTF_8) + "\"";
 		}
     }
 
@@ -686,7 +834,7 @@ public interface CoreFoundation extends Library {
 	 * {@link String} is used as an argument</b>. To end up with a correctly
 	 * encoded {@code CFString}, {@code encoding} must correspond to
 	 * {@link Native#getDefaultStringEncoding}. Use
-	 * {@link CFStringRef#toCFString(String)} to avoid encoding problems.
+	 * {@link CFStringRef#toCFStringRef(String)} to avoid encoding problems.
 	 * <p>
 	 * References are owned if created by functions including "Create" or "Copy"
 	 * and must be released with {@link #CFRelease} to avoid leaking references.
@@ -1158,12 +1306,11 @@ public interface CoreFoundation extends Library {
 	 *
 	 * @see CFStringBuiltInEncodings
 	 *
-	 * @return A pointer to a
-	 *         {@link CFStringBuiltInEncodings#kCFStringEncodingInvalidId}
-	 *         -terminated list of enum constants, each of type
-	 *         {@code CFStringEncoding}.
+	 * @return A {@link TerminatedStringEncodingArray} containing all the
+	 *         available {@code CFStringEncoding}s. The referenced memory
+	 *         is owned by the system and doesn't have to be deallocated.
 	 */
-    Pointer CFStringGetListOfAvailableEncodings();
+    TerminatedStringEncodingArray CFStringGetListOfAvailableEncodings();
 
 	/**
 	 * Returns the canonical name of a specified string encoding.
@@ -1567,6 +1714,15 @@ public interface CoreFoundation extends Library {
 	/**
 	 * Retrieves the value associated with the given key.
 	 *
+	 * To retrieve the returned {@link CFTypeRef} (if any), extract it from the
+	 * {@link PointerByReference} like this:
+	 * <p><code>
+	 * CFTypeRef cfTypeRef = new CFTypeRef(pointerByReference.getValue());
+	 * </code><p>
+	 * If the type is known, the proper subclass like {@link CFStringRef} or
+	 * {@link CFNumberRef} can be used instead of {@link CFTypeRef}.
+	 *
+	 *
 	 * @param theDict the dictionary to be queried. If this parameter is not a
 	 *            valid {@code CFDictionary}, the behavior is undefined.
 	 * @param key the key for which to find a match in the dictionary. The
@@ -1588,7 +1744,7 @@ public interface CoreFoundation extends Library {
 	 * @return {@code true} if a matching key was found, {@code false}
 	 *         otherwise.
 	 */
-    boolean CFDictionaryGetValueIfPresent(CFDictionaryRef dictionary, CFTypeRef key, CFTypeRef value);
+    boolean CFDictionaryGetValueIfPresent(CFDictionaryRef dictionary, CFTypeRef key, PointerByReference value);
 
 	/**
 	 * Fills the two buffers with the keys and values from the dictionary.
@@ -1612,7 +1768,7 @@ public interface CoreFoundation extends Library {
 	 *            {@link #CFDictionaryGetCount} pointers, or
 	 *            {@code null}, the behavior is undefined.
 	 */
-    void CFDictionaryGetKeysAndValues(CFDictionaryRef theDict, CFTypeRef keys, CFTypeRef values);
+    void CFDictionaryGetKeysAndValues(CFDictionaryRef theDict, CFTypeArrayRef keys, CFTypeArrayRef values);
 
 	/**
 	 * Adds the key-value pair to the dictionary if no such key already exists.
@@ -1655,7 +1811,7 @@ public interface CoreFoundation extends Library {
 	 *            expected by the retain or release callbacks, the behavior is
 	 *            undefined.
 	 */
-    void CFDictionarySetValue(CFMutableDictionaryRef dict, CFTypeRef key, CFTypeRef value);
+    void CFDictionarySetValue(CFMutableDictionaryRef theDict, CFTypeRef key, CFTypeRef value);
 
 	/**
 	 * Replaces the value of the key in the dictionary.
@@ -1861,7 +2017,7 @@ public interface CoreFoundation extends Library {
 	 * not hide its internal storage.
 	 *
 	 * @param theData the {@code CFData} object to examine.
-	 * @return A read-only pointer to the bytes associated with {@code theData}.
+	 * @return A read-only {@link Pointer} to the bytes associated with {@code theData}.
 	 */
     PointerByReference CFDataGetBytePtr(CFDataRef theData);
 
@@ -1879,7 +2035,7 @@ public interface CoreFoundation extends Library {
 	 *
 	 * @param theData a {@code CFMutableData} object. If you pass an immutable
 	 *            {@code CFData} object, the behavior is not defined.
-	 * @return A pointer to the bytes associated with {@code theData}.
+	 * @return A {@link Pointer} to the bytes associated with {@code theData}.
 	 */
     PointerByReference CFDataGetMutableBytePtr(CFMutableDataRef theData);
 
