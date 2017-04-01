@@ -32,7 +32,12 @@ import com.sun.jna.Native;
 import com.sun.jna.ptr.IntByReference;
 
 /**
- * Mapping of IOKit Power Assertions from {@code IOKit/pwr_mgt/IOPMLib.h}.
+ * Partial mapping of IOKit:
+ * <ul>
+ *   <li>Power Assertions from {@code IOKit/pwr_mgt/IOPMLib.h}</li>
+ *   <li>Some constants from {@code IOKit/pwr_mgt/IOPM.h}</li>
+ *   <li>Some functions from {@code IOKitLib.h}</li>
+ * </ul>
  *
  * @author Nadahar
  */
@@ -45,6 +50,10 @@ public interface IOKit extends Library {
 		}
 	});
     IOKit INSTANCE = (IOKit) Native.loadLibrary("IOKit", IOKit.class, options);
+
+    /*
+     * Power Assertions from {@code IOKit/pwr_mgt/IOPMLib.h}
+     */
 
 	/**
 	 * Prevents the system from sleeping automatically due to a lack of user
@@ -205,7 +214,7 @@ public interface IOKit extends Library {
 	 *
 	 * @since OS X 10.7
 	 */
-	IOReturn IOPMAssertionCreateWithDescription(CFStringRef assertionType, CFStringRef name, CFStringRef details,
+	KernReturnT<?> IOPMAssertionCreateWithDescription(CFStringRef assertionType, CFStringRef name, CFStringRef details,
 		CFStringRef humanReadableReason, CFStringRef localizationBundlePath, double timeout,
 		CFStringRef timeoutAction, IntByReference assertionID
 	);
@@ -255,7 +264,7 @@ public interface IOKit extends Library {
 	 *
 	 * @since OS X 10.7
 	 */
-	IOReturn IOPMAssertionCreateWithProperties(
+	KernReturnT<?> IOPMAssertionCreateWithProperties(
 		CFDictionaryRef assertionProperties,
 		IntByReference assertionID
 	);
@@ -300,7 +309,7 @@ public interface IOKit extends Library {
 	 *
 	 * @since OS X 10.7.3
 	 */
-	IOReturn IOPMAssertionDeclareUserActivity(
+	KernReturnT<?> IOPMAssertionDeclareUserActivity(
 		CFStringRef assertionName,
 		IOPMUserActiveType userType,
 		IntByReference assertionID
@@ -358,7 +367,7 @@ public interface IOKit extends Library {
 	 *
 	 * @since OS X 10.9
 	 */
-	IOReturn IOPMDeclareNetworkClientActivity(
+	KernReturnT<?> IOPMDeclareNetworkClientActivity(
 		CFStringRef assertionName,
 		IntByReference assertionID
 	);
@@ -397,7 +406,7 @@ public interface IOKit extends Library {
 	 *
 	 * @since OS X 10.5
 	 */
-	IOReturn IOPMAssertionRelease(IntByReference assertionID);
+	KernReturnT<?> IOPMAssertionRelease(IntByReference assertionID);
 
 	/**
 	 * Copies details about an {@code IOPMAssertion}. Returns a dictionary
@@ -433,7 +442,7 @@ public interface IOKit extends Library {
 	 *           <li>{@link IOReturn#kIOReturnSuccess} otherwise.</li>
 	 *         </ul>
 	 */
-	IOReturn IOPMAssertionSetProperty(
+	KernReturnT<?> IOPMAssertionSetProperty(
 		int theAssertion,
 		CFStringRef theProperty,
 		CFTypeRef theValue
@@ -461,7 +470,7 @@ public interface IOKit extends Library {
 	 *
 	 * @since OS X 10.5
 	 */
-	IOReturn IOPMCopyAssertionsByProcess(CFDictionaryRef assertionsByPID);
+	KernReturnT<?> IOPMCopyAssertionsByProcess(CFDictionaryRef assertionsByPID);
 
 	/**
 	 * Returns a list of available assertions and their system-wide levels.
@@ -480,7 +489,7 @@ public interface IOKit extends Library {
 	 *
 	 * @since OS X 10.5
 	 */
-	IOReturn IOPMCopyAssertionsStatus(CFDictionaryRef assertionsStatus);
+	KernReturnT<?> IOPMCopyAssertionsStatus(CFDictionaryRef assertionsStatus);
 
 	/**
 	 * This is a deprecated call to create a power assertion.
@@ -503,7 +512,7 @@ public interface IOKit extends Library {
 	 *             {@link #IOPMAssertionCreateWithProperties}. Please use that
 	 *             version of this API instead.
 	 */
-	IOReturn IOPMAssertionCreate(
+	KernReturnT<?> IOPMAssertionCreate(
 		CFStringRef assertionType,
 		int assertionLevel,
 		IntByReference assertionID
@@ -532,7 +541,7 @@ public interface IOKit extends Library {
 	 *
 	 * @since OS X 10.6
 	 */
-	IOReturn IOPMAssertionCreateWithName(
+	KernReturnT<?> IOPMAssertionCreateWithName(
 		CFStringRef assertionType,
 		int assertionLevel,
 		CFStringRef assertionName,
@@ -809,4 +818,49 @@ public interface IOKit extends Library {
 			return null;
 		}
 	}
+
+	/*
+	 * Some constants from {@code IOKit/pwr_mgt/IOPM.h}
+	 */
+
+	/**
+	 * Power Source state is published as properties to the {@code IORegistry} under these keys.
+	 */
+	final String kIOPMPSExternalConnectedKey     = "ExternalConnected";
+	final String kIOPMPSExternalChargeCapableKey = "ExternalChargeCapable";
+	final String kIOPMPSBatteryInstalledKey      = "BatteryInstalled";
+	final String kIOPMPSIsChargingKey            = "IsCharging";
+	final String kIOPMFullyChargedKey            = "FullyCharged";
+	final String kIOPMPSAtWarnLevelKey           = "AtWarnLevel";
+	final String kIOPMPSAtCriticalLevelKey       = "AtCriticalLevel";
+	final String kIOPMPSCurrentCapacityKey       = "CurrentCapacity";
+	final String kIOPMPSMaxCapacityKey           = "MaxCapacity";
+	final String kIOPMPSDesignCapacityKey        = "DesignCapacity";
+	final String kIOPMPSTimeRemainingKey         = "TimeRemaining";
+	final String kIOPMPSAmperageKey              = "Amperage";
+	final String kIOPMPSVoltageKey               = "Voltage";
+	final String kIOPMPSCycleCountKey            = "CycleCount";
+	final String kIOPMPSMaxErrKey                = "MaxErr";
+	final String kIOPMPSAdapterInfoKey           = "AdapterInfo";
+	final String kIOPMPSLocationKey              = "Location";
+	final String kIOPMPSErrorConditionKey        = "ErrorCondition";
+	final String kIOPMPSManufacturerKey          = "Manufacturer";
+	final String kIOPMPSManufactureDateKey       = "ManufactureDate";
+	final String kIOPMPSModelKey                 = "Model";
+	final String kIOPMPSSerialKey                = "Serial";
+	final String kIOPMDeviceNameKey              = "DeviceName";
+	final String kIOPMPSLegacyBatteryInfoKey     = "LegacyBatteryInfo";
+	final String kIOPMPSBatteryHealthKey         = "BatteryHealth";
+	final String kIOPMPSHealthConfidenceKey      = "HealthConfidence";
+	final String kIOPMPSCapacityEstimatedKey     = "CapacityEstimated";
+	final String kIOPMPSBatteryChargeStatusKey   = "ChargeStatus";
+	final String kIOPMPSBatteryTemperatureKey    = "Temperature";
+	final String kIOPMPSAdapterDetailsKey        = "AdapterDetails";
+	final String kIOPMPSChargerConfigurationKey  = "ChargerConfiguration";
+
+	/*
+	 * Some functions from {@code IOKitLib.h}
+	 */
+
+
 }

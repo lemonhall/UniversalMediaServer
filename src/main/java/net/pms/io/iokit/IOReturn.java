@@ -18,21 +18,19 @@
  */
 package net.pms.io.iokit;
 
-import net.pms.util.jna.JnaIntEnum;
-
 /**
  * Maps OS X {@code IOReturn} integer values to their defined names as defined
  * in <a href=
  * "http://web.archive.org/web/20170320182249/https://opensource.apple.com/source/xnu/xnu-201/iokit/IOKit/IOReturn.h"
  * >IOReturn.h</a>
  * <p>
- * Use {@link IOReturn#getValue()} to convert an {@link IOReturn} to its integer
- * value. Use {@link IOReturn#typeOf(int)} to convert an integer value to an
+ * Use {@link IOReturn#getValue} to convert an {@link IOReturn} to its integer
+ * value. Use {@link IOReturn#typeOf} to convert an integer value to an
  * {@link IOReturn}.
  *
  * @author Nadahar
  */
-public enum IOReturn implements JnaIntEnum<IOReturn>{
+public enum IOReturn implements KernReturnT{
 
 	/** OK */
 	kIOReturnSuccess(0),
@@ -207,10 +205,10 @@ public enum IOReturn implements JnaIntEnum<IOReturn>{
 		return value;
 	}
 
-	@Override
+	/*@Override TODO: Decide
 	public IOReturn typeForValue(int ioReturn) {
 		return IOReturn.typeOf(ioReturn);
-	}
+	}*/
 
 	/**
 	 * @param the {@code IOReturn} integer value.

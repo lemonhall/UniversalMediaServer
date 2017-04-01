@@ -11,6 +11,7 @@ import com.sun.jna.ptr.IntByReference;
 import com.sun.jna.ptr.PointerByReference;
 import net.pms.io.iokit.IOKit;
 import net.pms.io.iokit.IOReturn;
+import net.pms.io.iokit.KernReturnT;
 import net.pms.util.jna.CFTypeArrayRef;
 import net.pms.util.jna.CoreFoundation;
 import net.pms.util.jna.PointerArrayByReference;
@@ -45,13 +46,13 @@ public class Test2 {
 		IntByReference assertionID = new IntByReference();
 		CFStringRef assertionType = CFStringRef.toCFStringRef(IOKit.kIOPMAssertPreventUserIdleSystemSleep);
 		CFStringRef name = CFStringRef.toCFStringRef("TestName");
-		IOReturn ioReturn = IOKit.INSTANCE.IOPMAssertionCreateWithName(assertionType, IOKit.kIOPMAssertionLevelOn, name, assertionID);
+		KernReturnT<?> ioReturn = IOKit.INSTANCE.IOPMAssertionCreateWithName(assertionType, IOKit.kIOPMAssertionLevelOn, name, assertionID);
 		System.out.println(ioReturn);
 		System.out.println(Integer.toHexString(ioReturn.getValue()));
 		System.out.println(assertionID.getValue());
 		CFStringRef details = CFStringRef.toCFStringRef("Testing out IOKit");
 		CFStringRef timeOutAction = CFStringRef.toCFStringRef(IOKit.kIOPMAssertionTimeoutActionTurnOff);
-		IOReturn ioResult = IOKit.INSTANCE.IOPMAssertionCreateWithDescription(assertionType, name, details, null, null, 10d, timeOutAction, assertionID);
+		KernReturnT<?> ioResult = IOKit.INSTANCE.IOPMAssertionCreateWithDescription(assertionType, name, details, null, null, 10d, timeOutAction, assertionID);
 		System.out.println(ioResult);
 		System.out.println(Integer.toHexString(ioResult.getValue()));
 		System.out.println(assertionID.getValue());
@@ -91,9 +92,9 @@ public class Test2 {
 		typeRefs[0] = CFStringRef.toCFStringRef("First array element");
 		typeRefs[1] = CFStringRef.toCFStringRef("Second array element");
 		typeRefs[2] = CFStringRef.toCFStringRef("Third array element");
-		typeRefs[3] = CFStringRef.toCFStringRef("Fourth array element");		
+		typeRefs[3] = CFStringRef.toCFStringRef("Fourth array element");
 		CFTypeArrayRef arrayRef = new CFTypeArrayRef(typeRefs);
-		
+
 		CFArrayRef cfArray = coreFoundation.CFArrayCreate(null, arrayRef, 4, CoreFoundation.kCFTypeArrayCallBacks);
 		coreFoundation.CFArrayGetCount(cfArray);
 		coreFoundation.CFArrayGetValueAtIndex(cfArray, 3);
@@ -107,7 +108,7 @@ public class Test2 {
 		coreFoundation.CFArraySetValueAtIndex(cfArray3, 3, name);
 		coreFoundation.CFArrayRemoveValueAtIndex(cfArray3, 2);
 		coreFoundation.CFArrayRemoveAllValues(cfArray3);
-		
+
 		byte[] bytes = "Test bytes foreva".getBytes();
 		CFDataRef cfData = coreFoundation.CFDataCreate(null, bytes, bytes.length);
 		CFDataRef cfData2 = coreFoundation.CFDataCreateCopy(null, cfData);
@@ -120,7 +121,7 @@ public class Test2 {
 		coreFoundation.CFDataIncreaseLength(emptyCfData, 20);
 		byte[] bytes2 = "More testbytes".getBytes();
 		coreFoundation.CFDataAppendBytes(cfData3, bytes2, bytes2.length);
-		
+
 		/*CFNumberRef i = CFNumberRef.toCFNumber(43.8f);
 		System.out.println(i);
 		coreFoundation.CFRelease(i);*/

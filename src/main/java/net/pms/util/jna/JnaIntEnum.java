@@ -23,6 +23,17 @@ package net.pms.util.jna;
  * {@link Enum} and C-style integer enums.
  */
 public interface JnaIntEnum<T> {
+
+	/**
+	 * @return This constant's integer value
+	 */
 	int getValue();
+
+	/**
+	 * Try to find a constant corresponding to {@code value}.
+	 *
+	 * @param value the integer value to look for.
+	 * @return The corresponding constant or {@code null} if not found.
+	 */
 	T typeForValue(int value);
 }
