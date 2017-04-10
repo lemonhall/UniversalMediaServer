@@ -29,7 +29,8 @@ import com.sun.jna.Pointer;
  *
  * @author Nadahar
  */
-public abstract class TerminatedIntArray extends TerminatedArray<Integer>{
+@SuppressWarnings({"checkstyle:JavadocMethod", "checkstyle:JavadocVariable"})
+public abstract class TerminatedIntArray extends TerminatedArray<Integer> {
 
 	protected static final int SIZE = Integer.SIZE / 8;
 
@@ -45,7 +46,7 @@ public abstract class TerminatedIntArray extends TerminatedArray<Integer>{
 	}
 
 	@Override
-	abstract public Integer getTerminator();
+	public abstract Integer getTerminator();
 
 	@Override
 	public int getElementSize() {

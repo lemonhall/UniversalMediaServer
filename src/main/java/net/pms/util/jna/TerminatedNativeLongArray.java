@@ -30,7 +30,8 @@ import com.sun.jna.Pointer;
  *
  * @author Nadahar
  */
-public abstract class TerminatedNativeLongArray extends TerminatedArray<NativeLong>{
+@SuppressWarnings({"checkstyle:JavadocMethod", "checkstyle:JavadocVariable"})
+public abstract class TerminatedNativeLongArray extends TerminatedArray<NativeLong> {
 
 	protected static final int SIZE = NativeLong.SIZE;
 
@@ -46,7 +47,7 @@ public abstract class TerminatedNativeLongArray extends TerminatedArray<NativeLo
 	}
 
 	@Override
-	abstract public NativeLong getTerminator();
+	public abstract NativeLong getTerminator();
 
 	@Override
 	public int getElementSize() {

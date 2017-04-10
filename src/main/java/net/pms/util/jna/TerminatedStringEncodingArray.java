@@ -30,6 +30,7 @@ import net.pms.util.jna.CoreFoundation.CFStringBuiltInEncodings;
  *
  * @author Nadahar
  */
+@SuppressWarnings("checkstyle:JavadocMethod")
 public class TerminatedStringEncodingArray extends TerminatedIntArray {
 
 	public TerminatedStringEncodingArray() {

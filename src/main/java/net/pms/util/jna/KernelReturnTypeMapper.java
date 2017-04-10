@@ -18,24 +18,13 @@
  */
 package net.pms.util.jna;
 
-/**
- * This interface provides the possibility for automatic conversion between
- * {@link Enum} and C-style integer enums.
- *
- * @param <T> the Enum type
- */
-public interface JnaIntEnum<T> {
+import com.sun.jna.DefaultTypeMapper;
+import net.pms.io.iokit.KernReturnT;
 
-	/**
-	 * @return This constant's integer value
-	 */
-	int getValue();
 
-	/**
-	 * Try to find a constant corresponding to {@code value}.
-	 *
-	 * @param value the integer value to look for.
-	 * @return The corresponding constant or {@code null} if not found.
-	 */
-	T typeForValue(int value);
+public class KernelReturnTypeMapper extends DefaultTypeMapper {
+
+	{
+		addTypeConverter(KernReturnT.class, new KernReturnTConverter());
+	}
 }

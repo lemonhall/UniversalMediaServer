@@ -21,6 +21,8 @@ package net.pms.util.jna;
 /**
  * This interface provides the possibility for automatic conversion between
  * {@link Enum} and C-style long long enums.
+ *
+ * @param <T> the Enum type
  */
 public interface JnaLongEnum<T> {
 	long getValue();

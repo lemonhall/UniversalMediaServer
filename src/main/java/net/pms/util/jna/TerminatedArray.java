@@ -44,6 +44,7 @@ import com.sun.jna.PointerType;
  *
  * @author Nadahar
  */
+@SuppressWarnings({"checkstyle:JavadocMethod", "checkstyle:JavadocVariable"})
 public abstract class TerminatedArray<E> extends PointerType implements List<E> {
 
 	public TerminatedArray() {
@@ -56,26 +57,26 @@ public abstract class TerminatedArray<E> extends PointerType implements List<E> 
 
 	protected List<E> buffer;
 
-	abstract public E getTerminator();
+	public abstract E getTerminator();
 
 	/**
 	 * The size of one element in the array in bytes.
 	 *
 	 * @return The element size.
 	 */
-	abstract public int getElementSize();
+	public abstract int getElementSize();
 
-	abstract protected E readElement(int i);
+	protected abstract E readElement(int i);
 
-	abstract protected void writeElement(int i);
+	protected abstract void writeElement(int i);
 
-	abstract protected void writeTerminator();
+	protected abstract void writeTerminator();
 
 	@Override
 	public Object fromNative(Object nativeValue, FromNativeContext context) {
-    	setPointer((Pointer) nativeValue);
-        // Always pass along null pointer values
-    	return nativeValue == null ? null : this;
+		setPointer((Pointer) nativeValue);
+		// Always pass along null pointer values
+		return nativeValue == null ? null : this;
 	}
 
 	@Override
@@ -115,13 +116,13 @@ public abstract class TerminatedArray<E> extends PointerType implements List<E> 
 		} else {
 			buffer.clear();
 		}
-    	for (int i = 0;; i++) {
-    		E element = readElement(i);
-    		if (element == terminator) {
-    			break;
-    		}
-    		buffer.add(element);
-    	}
+		for (int i = 0;; i++) {
+			E element = readElement(i);
+			if (element == terminator) {
+				break;
+			}
+			buffer.add(element);
+		}
 	}
 
 	@Override
@@ -165,7 +166,7 @@ public abstract class TerminatedArray<E> extends PointerType implements List<E> 
 
 	@Override
 	public boolean add(E e) {
-		return buffer != null && buffer.add(e) ;
+		return buffer != null && buffer.add(e);
 	}
 
 	@Override

@@ -1,5 +1,6 @@
 package net.pms;
 
+import java.awt.image.ImageObserver;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
@@ -9,11 +10,16 @@ import com.sun.jna.Pointer;
 import com.sun.jna.ptr.DoubleByReference;
 import com.sun.jna.ptr.IntByReference;
 import com.sun.jna.ptr.PointerByReference;
+
+import net.pms.io.iokit.DefaultKernReturnT;
 import net.pms.io.iokit.IOKit;
 import net.pms.io.iokit.IOReturn;
 import net.pms.io.iokit.KernReturnT;
 import net.pms.util.jna.CFTypeArrayRef;
 import net.pms.util.jna.CoreFoundation;
+import net.pms.util.jna.IONameT;
+import net.pms.util.jna.IOObjectT;
+import net.pms.util.jna.IOObjectTRef;
 import net.pms.util.jna.PointerArrayByReference;
 import net.pms.util.jna.StringByReference;
 import net.pms.util.jna.TerminatedStringEncodingArray;
@@ -33,6 +39,9 @@ import net.pms.util.jna.CoreFoundation.CFStringBuiltInEncodings;
 import net.pms.util.jna.CoreFoundation.CFStringCompareFlags;
 import net.pms.util.jna.CoreFoundation.CFStringRef;
 import net.pms.util.jna.CoreFoundation.CFTypeRef;
+import net.pms.util.jna.IOIteratorT;
+import net.pms.util.jna.IOIteratorTRef;
+import net.pms.util.jna.MachPortT;
 
 public class Test2 {
 
@@ -43,16 +52,38 @@ public class Test2 {
 		//System.out.print(FileManager.INSTANCE.FSPathMakeRef("", 0, new ByteByReference((byte) 1)));
 		Native.setProtected(true);
 		CoreFoundation coreFoundation = CoreFoundation.INSTANCE;
+		IOKit ioKit = IOKit.INSTANCE;
+		
+		CFStringRef name = CFStringRef.toCFStringRef("TestName");
+		IONameT objName = new IONameT(true);
+		Pointer p = Pointer.NULL;
+		//PointerByReference ts = new PointerByReference();
+		KernReturnT ret;
+		//ret = IOKit.INSTANCE.IOMasterPort(p, ts);
+		CFMutableDictionaryRef svcDict = ioKit.IOServiceMatching("IOHIDSystem");
+		IOIteratorTRef iteratorRef = new IOIteratorTRef(true);
+		ret = ioKit.IOServiceGetMatchingServices(IOKit.kIOMasterPortDefault, svcDict, iteratorRef);
+		IOIteratorT iterator = iteratorRef.getValue();
+		ret = ioKit.IOObjectGetClass(iterator, objName);
+		IOObjectT entry = ioKit.IOIteratorNext(iterator);
+		ret = ioKit.IOObjectGetClass(entry, objName);
+		
+		IOObjectTRef portRef = new IOObjectTRef(true);
+		ret = ioKit.IOMasterPort(IOKit.kIOMasterPortDefault, portRef);		
+		ret = ioKit.IOObjectGetClass(portRef.getValue(), objName);
+		
 		IntByReference assertionID = new IntByReference();
 		CFStringRef assertionType = CFStringRef.toCFStringRef(IOKit.kIOPMAssertPreventUserIdleSystemSleep);
-		CFStringRef name = CFStringRef.toCFStringRef("TestName");
-		KernReturnT<?> ioReturn = IOKit.INSTANCE.IOPMAssertionCreateWithName(assertionType, IOKit.kIOPMAssertionLevelOn, name, assertionID);
+		KernReturnT ioReturn = IOKit.INSTANCE.IOPMAssertionCreateWithName(assertionType, IOKit.kIOPMAssertionLevelOn, name, assertionID);
 		System.out.println(ioReturn);
+		if (ioReturn == DefaultKernReturnT.SUCCESS) {
+			System.out.println("Success reported");
+		}
 		System.out.println(Integer.toHexString(ioReturn.getValue()));
 		System.out.println(assertionID.getValue());
 		CFStringRef details = CFStringRef.toCFStringRef("Testing out IOKit");
 		CFStringRef timeOutAction = CFStringRef.toCFStringRef(IOKit.kIOPMAssertionTimeoutActionTurnOff);
-		KernReturnT<?> ioResult = IOKit.INSTANCE.IOPMAssertionCreateWithDescription(assertionType, name, details, null, null, 10d, timeOutAction, assertionID);
+		KernReturnT ioResult = IOKit.INSTANCE.IOPMAssertionCreateWithDescription(assertionType, name, details, null, null, 10d, timeOutAction, assertionID);
 		System.out.println(ioResult);
 		System.out.println(Integer.toHexString(ioResult.getValue()));
 		System.out.println(assertionID.getValue());

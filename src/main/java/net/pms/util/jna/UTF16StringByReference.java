@@ -24,6 +24,9 @@ import com.sun.jna.Pointer;
 import com.sun.jna.PointerType;
 
 
+/**
+ * An implementation of a referenced {@code null}-terminated UTF-16 string.
+ */
 public class UTF16StringByReference extends PointerType {
 
 	/**
@@ -65,7 +68,7 @@ public class UTF16StringByReference extends PointerType {
 	 *
 	 * @param value the new string content.
 	 */
-    public void setValue(String value) {
+	public void setValue(String value) {
 		if (getNumberOfBytes(value) > getAllocatedSize()) {
 			setPointer(new Memory(getNumberOfBytes(value) + 2));
 		}
@@ -74,25 +77,27 @@ public class UTF16StringByReference extends PointerType {
 			getPointer().setChar(i * 2, value.charAt(i));
 		}
 		getPointer().setMemory(i * 2L, 2L, (byte) 0);
-    }
+	}
 
 	/**
 	 * Gets this {@link UTF16StringByReference}'s content.
 	 *
 	 * @return The content as a {@link String}.
 	 */
-    public String getValue() {
-    	if (getPointer() == null) {
-    		return null;
-    	}
-    	int length;
-    	for (length = 0; getPointer().getChar(length) != 0; length += 2);
-    	char[] value = new char[length / 2];
-    	for (int i = 0; i < length; i += 2) {
-    		value[i / 2] = getPointer().getChar(i);
-    	}
-    	return String.valueOf(value);
-    }
+	public String getValue() {
+		if (getPointer() == null) {
+			return null;
+		}
+		int length = 0;
+		while (getPointer().getChar(length) != 0) {
+			length += 2;
+		}
+		char[] value = new char[length / 2];
+		for (int i = 0; i < length; i += 2) {
+			value[i / 2] = getPointer().getChar(i);
+		}
+		return String.valueOf(value);
+	}
 
 	/**
 	 * Gets the size in bytes allocated to this {@link UTF16StringByReference}
@@ -100,30 +105,30 @@ public class UTF16StringByReference extends PointerType {
 	 *
 	 * @return The allocated size in bytes.
 	 */
-    public long getAllocatedSize() {
-    	if (getPointer() instanceof Memory) {
-    		return Math.max(((Memory) getPointer()).size() - 2, 0);
-    	}
-    	return 0;
-    }
-
-    @Override
-	public Object fromNative(Object nativeValue, FromNativeContext context) {
-        // Always pass along null pointer values
-        if (nativeValue == null) {
-            return null;
-        }
-    	setPointer((Pointer) nativeValue);
-    	return this;
+	public long getAllocatedSize() {
+		if (getPointer() instanceof Memory) {
+			return Math.max(((Memory) getPointer()).size() - 2, 0);
+		}
+		return 0;
 	}
 
-    @Override
-    public String toString() {
-    	if (getPointer() == null) {
-    		return "null";
-    	}
-    	return getValue();
-    }
+	@Override
+	public Object fromNative(Object nativeValue, FromNativeContext context) {
+		// Always pass along null pointer values
+		if (nativeValue == null) {
+			return null;
+		}
+		setPointer((Pointer) nativeValue);
+		return this;
+	}
+
+	@Override
+	public String toString() {
+		if (getPointer() == null) {
+			return "null";
+		}
+		return getValue();
+	}
 
 	/**
 	 * Calculates the length in bytes of {@code string} as {@code UTF-16}.
@@ -131,17 +136,17 @@ public class UTF16StringByReference extends PointerType {
 	 * @param string the string to evaluate.
 	 * @return the byte-length of {@code string}.
 	 */
-    public static int getNumberOfBytes(String string) {
-    	if (string == null) {
-    		return 0;
-    	}
+	public static int getNumberOfBytes(String string) {
+		if (string == null) {
+			return 0;
+		}
 		final int length = string.length();
 		int byteLength = 0;
-		for (int offset = 0; offset < length; ) {
-		   int codepoint = string.codePointAt(offset);
-		   byteLength += Character.charCount(codepoint) * 2;
-		   offset += Character.charCount(codepoint);
+		for (int offset = 0; offset < length;) {
+			int codepoint = string.codePointAt(offset);
+			byteLength += Character.charCount(codepoint) * 2;
+			offset += Character.charCount(codepoint);
 		}
-    	return byteLength;
-    }
+		return byteLength;
+	}
 }

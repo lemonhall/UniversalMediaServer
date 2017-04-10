@@ -27,6 +27,9 @@ import com.sun.jna.Pointer;
 import com.sun.jna.PointerType;
 
 
+/**
+ * An implementation of a referenced {@code null}-terminated C string.
+ */
 public class StringByReference extends PointerType {
 
 	/**
@@ -95,7 +98,6 @@ public class StringByReference extends PointerType {
 	 * If not a new area will be allocated and the {@link Pointer} updated.
 	 *
 	 * @param value the new string content.
-	 * @param charset a supported {@link Charset} to use for encoding.
 	 */
 	public void setValue(String value) {
 		setValue(value, Native.getDefaultStringEncoding());
@@ -124,17 +126,17 @@ public class StringByReference extends PointerType {
 	 * @param charsetName a valid and supported {@link Charset} name to use for
 	 *            encoding.
 	 */
-    public void setValue(String value, String charsetName) {
-    	try {
-    		int length = value.getBytes(charsetName).length;
+	public void setValue(String value, String charsetName) {
+		try {
+			int length = value.getBytes(charsetName).length;
 			if (length > getAllocatedSize()) {
 				setPointer(new Memory(length + 1));
 			}
 		} catch (UnsupportedEncodingException e) {
 			throw new IllegalArgumentException("Unsupported encoding: " + charsetName, e);
 		}
-        getPointer().setString(0, value, charsetName);
-    }
+		getPointer().setString(0, value, charsetName);
+	}
 
 	/**
 	 * Gets this {@link StringByReference}'s content using
@@ -142,9 +144,9 @@ public class StringByReference extends PointerType {
 	 *
 	 * @return The content as a {@link String}.
 	 */
-    public String getValue() {
-    	return getValue(Native.getDefaultStringEncoding());
-    }
+	public String getValue() {
+		return getValue(Native.getDefaultStringEncoding());
+	}
 
 	/**
 	 * Gets this {@link StringByReference}'s content using
@@ -153,9 +155,9 @@ public class StringByReference extends PointerType {
 	 * @param charset a supported {@link Charset} to use for decoding.
 	 * @return The content as a {@link String}.
 	 */
-    public String getValue(Charset charset) {
-    	return getValue(charset.name());
-    }
+	public String getValue(Charset charset) {
+		return getValue(charset.name());
+	}
 
 	/**
 	 * Gets this {@link StringByReference}'s content using {@code charsetName}
@@ -165,9 +167,9 @@ public class StringByReference extends PointerType {
 	 *            decoding.
 	 * @return The content as a {@link String}.
 	 */
-    public String getValue(String charsetName) {
-        return getPointer() == null ? null : getPointer().getString(0, charsetName);
-    }
+	public String getValue(String charsetName) {
+		return getPointer() == null ? null : getPointer().getString(0, charsetName);
+	}
 
 	/**
 	 * Gets the size in bytes allocated to this {@link StringByReference}
@@ -175,28 +177,28 @@ public class StringByReference extends PointerType {
 	 *
 	 * @return The allocated size in bytes.
 	 */
-    public long getAllocatedSize() {
-    	if (getPointer() instanceof Memory) {
-    		return Math.max(((Memory) getPointer()).size() - 1, 0);
-    	}
-    	return 0;
-    }
-
-	@Override
-	public Object fromNative(Object nativeValue, FromNativeContext context) {
-        // Always pass along null pointer values
-        if (nativeValue == null) {
-            return null;
-        }
-    	setPointer((Pointer) nativeValue);
-    	return this;
+	public long getAllocatedSize() {
+		if (getPointer() instanceof Memory) {
+			return Math.max(((Memory) getPointer()).size() - 1, 0);
+		}
+		return 0;
 	}
 
 	@Override
-    public String toString() {
-    	if (getPointer() == null) {
-    		return "null";
-    	}
-    	return getValue();
-    }
+	public Object fromNative(Object nativeValue, FromNativeContext context) {
+		// Always pass along null pointer values
+		if (nativeValue == null) {
+			return null;
+		}
+		setPointer((Pointer) nativeValue);
+		return this;
+	}
+
+	@Override
+	public String toString() {
+		if (getPointer() == null) {
+			return "null";
+		}
+		return getValue();
+	}
 }

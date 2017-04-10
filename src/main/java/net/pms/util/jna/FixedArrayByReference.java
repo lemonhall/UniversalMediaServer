@@ -24,24 +24,27 @@ import com.sun.jna.Pointer;
 import com.sun.jna.PointerType;
 
 /**
- * An abstract implementation of a referenced array where the elements are
- * placed adjacent to each other without a terminator.
+ * An abstract implementation of a referenced fixed size array where the
+ * elements are placed adjacent to each other without a terminator.
  *
- * @param <E> the type of elements in this {@link ArrayByReference}.
+ * @param <E> the type of elements in this {@link FixedArrayByReference}.
  *
  * @author Nadahar
  */
-public abstract class ArrayByReference<E> extends PointerType {
+public abstract class FixedArrayByReference<E> extends PointerType {
 
 	/**
-	 * Creates an unallocated {@link ArrayByReference}.
+	 * Creates an unallocated {@link FixedArrayByReference}.
+	 *
+	 * @param fixedSize the size of this fixed size array.
 	 */
-	public ArrayByReference() {
+	public FixedArrayByReference(long fixedSize) {
 		super();
+		size = fixedSize;
 	}
 
-	/** The current array size. */
-	protected long size;
+	/** The array size. */
+	protected final long size;
 
 	/**
 	 * The size of one element in this array in bytes.
@@ -65,44 +68,6 @@ public abstract class ArrayByReference<E> extends PointerType {
 	protected abstract void setElements(E[] array);
 
 	/**
-	 * Sets a new array size allocating memory as needed.
-	 *
-	 * <b>Please note that calling {@link #setSize} while holding a
-	 * {@link Pointer} allocated by native code will lead to memory leak as the
-	 * reference to the allocated memory is lost</b>. Instead, free the pointer
-	 * by sending {@link #getPointer()} to the native free function before
-	 * calling {@link #setSize}. {@link #isGarbageCollected()} can be used to
-	 * check if the currently held {@link Pointer} is allocated by Java and will
-	 * be deallocated by the GC or not.
-	 *
-	 * @param size the new array size to allocate. Setting the size to 0 will
-	 *            set the held {@link Pointer} to {@code null}.
-	 * @param reAllocateThreshold decides how much the new required allocation
-	 *            can be smaller than the current allocation in bytes before
-	 *            memory should be reallocated. This only has effect is memory
-	 *            is already reserved and the new {@code size} is smaller than
-	 *            the previous.
-	 */
-	public void setSize(long size, long reAllocateThreshold) {
-		if (size < 1) {
-			super.setPointer(Pointer.NULL);
-			this.size = 0;
-		} else if (
-			getPointer() instanceof Memory &&
-			getElementSize() * size < ((Memory) getPointer()).size() &&
-			Math.abs(((Memory) getPointer()).size() - getElementSize() * size) <= reAllocateThreshold
-		) {
-			// Reuse the allocated memory if the reduction in size is less than
-			// or equal to reAllocateThreshold bytes.
-			this.size = size;
-		} else {
-			// Allocate new memory
-			super.setPointer(new Memory(getElementSize() * size));
-			this.size = size;
-		}
-	}
-
-	/**
 	 * @return The number of elements in the array.
 	 */
 	public long getSize() {
@@ -122,31 +87,27 @@ public abstract class ArrayByReference<E> extends PointerType {
 	/**
 	 * Stores the values from {@code array} allocating memory as needed.
 	 *
-	 * <b>Please note that calling {@link #setArray} while holding a
-	 * {@link Pointer} allocated by native code will lead to memory leak as the
-	 * reference to the allocated memory is lost</b>. Instead, free the pointer
-	 * by sending {@link #getPointer()} to the native free function before
-	 * calling {@link #setArray}. {@link #isGarbageCollected()} can be used to
-	 * check if the currently held {@link Pointer} is allocated by Java and will
-	 * be deallocated by the GC or not.
-	 *
 	 * @param array the array of {@link E}s to write to the referenced memory.
-	 *            Sending an empty array will set the held {@link Pointer} to
-	 *            {@code null}.
-	 * @param reAllocateThreshold decides how much the new required allocation
-	 *            can be smaller than the current allocation in bytes before
-	 *            memory should be reallocated. This only has effect is memory
-	 *            is already reserved and the new array size is smaller than the
-	 *            previous.
+	 *            The array size must be the same as defined for this
+	 *            {@link FixedArrayByReference}.
 	 */
-	public void setArray(E[] array, long reAllocateThreshold) {
+	public void setArray(E[] array) {
 		if (array == null) {
 			throw new NullPointerException("array cannot be null");
 		}
-		setSize(array.length, reAllocateThreshold);
-		if (array.length > 0) {
-			setElements(array);
+		if (array.length != size) {
+			throw new IllegalArgumentException("array size must be " + size);
 		}
+
+		if (size < 1) {
+			super.setPointer(Pointer.NULL);
+			return;
+		} else if (getPointer() == null) {
+			// Allocate new memory
+			super.setPointer(new Memory(getElementSize() * size));
+		}
+
+		setElements(array);
 	}
 
 	/**
@@ -157,13 +118,10 @@ public abstract class ArrayByReference<E> extends PointerType {
 	 * @return An array of {@link E} containing the values of the referenced array.
 	 */
 	public E[] getArray() {
-		if (getPointer() == null) {
-			return null;
-		}
 		if (size > Integer.MAX_VALUE) {
 			throw new UnsupportedOperationException("Array to big, please read it \"manually\" using getPointer.readX");
 		}
-		return getElements();
+		return getPointer() == null ? null : getElements();
 	}
 
 	/**

@@ -30,9 +30,6 @@ package net.pms.io.iokit;
  */
 public enum KernReturn implements KernReturnT {
 
-	/** Success */
-	KERN_SUCCESS(0),
-
 	/** Specified address is not currently valid. */
 	KERN_INVALID_ADDRESS(1),
 
@@ -50,7 +47,7 @@ public enum KernReturn implements KernReturnT {
 
 	/**
 	 * The function requested was not applicable to this type of argument, or an
-	 * argument is invalid
+	 * argument is invalid.
 	 */
 	KERN_INVALID_ARGUMENT(4),
 
@@ -204,19 +201,19 @@ public enum KernReturn implements KernReturnT {
 	 */
 	KERN_NOT_DEPRESSED(36),
 
-	/** Object has been terminated and is no longer available */
+	/** Object has been terminated and is no longer available. */
 	KERN_TERMINATED(37),
 
 	/** Lock set has been destroyed and is no longer available. */
 	KERN_LOCK_SET_DESTROYED(38),
 
-	/** The thread holding the lock terminated before releasing the lock */
+	/** The thread holding the lock terminated before releasing the lock. */
 	KERN_LOCK_UNSTABLE(39),
 
-	/** The lock is already owned by another thread */
+	/** The lock is already owned by another thread. */
 	KERN_LOCK_OWNED(40),
 
-	/** The lock is already owned by the calling thread */
+	/** The lock is already owned by the calling thread. */
 	KERN_LOCK_OWNED_SELF(41),
 
 	/** Semaphore has been destroyed and is no longer available. */
@@ -224,7 +221,7 @@ public enum KernReturn implements KernReturnT {
 
 	/**
 	 * Return from RPC indicating the target server was terminated before it
-	 * successfully replied
+	 * successfully replied.
 	 */
 	KERN_RPC_SERVER_TERMINATED(43),
 
@@ -234,7 +231,7 @@ public enum KernReturn implements KernReturnT {
 	/** Allow an orphaned activation to continue executing. */
 	KERN_RPC_CONTINUE_ORPHAN(45),
 
-	/** Empty thread activation (No thread linked to it) */
+	/** Empty thread activation (No thread linked to it). */
 	KERN_NOT_SUPPORTED(46),
 
 	/** Remote node down or inaccessible. */
@@ -243,7 +240,7 @@ public enum KernReturn implements KernReturnT {
 	/** A signalled thread was not actually waiting. */
 	KERN_NOT_WAITING(48),
 
-	/** Some thread-oriented operation (semaphore_wait) timed out */
+	/** Some thread-oriented operation (semaphore_wait) timed out. */
 	KERN_OPERATION_TIMED_OUT(49),
 
 	/**
@@ -258,7 +255,7 @@ public enum KernReturn implements KernReturnT {
 	/** The provided buffer is of insufficient size for the requested data. */
 	KERN_INSUFFICIENT_BUFFER_SIZE(52),
 
-	/** Maximum return value allowable */
+	/** Maximum return value allowable. */
 	KERN_RETURN_MAX(0x100);
 
 	private final int value;
@@ -276,7 +273,7 @@ public enum KernReturn implements KernReturnT {
 	}
 
 	/**
-	 * @param the {@code KernReturn} integer value.
+	 * @param kernReturn the {@code KernReturn} integer value.
 	 * @return The corresponding {@link KernReturn}.
 	 */
 	public static KernReturn typeOf(int kernReturn) {

@@ -120,6 +120,7 @@ public class CFTypeArrayRef extends ArrayByReference<CFTypeRef> {
 	 *
 	 * @return An array containing the values of the referenced {@link CFTypeRef} array.
 	 */
+	@Override
 	@SuppressFBWarnings("EI_EXPOSE_REP")
 	public CFTypeRef[] getArray() {
 		if (array == null) {
@@ -145,7 +146,7 @@ public class CFTypeArrayRef extends ArrayByReference<CFTypeRef> {
 	@Override
 	protected void setElements(CFTypeRef[] array) {
 		for (int i = 0; i < size; i++) {
-			getPointer().setPointer(i * Pointer.SIZE, array[i].getPointer());
+			getPointer().setPointer(i * getElementSize(), array[i].getPointer());
 		}
 	}
 
@@ -162,8 +163,8 @@ public class CFTypeArrayRef extends ArrayByReference<CFTypeRef> {
 		}
 		StringBuilder sb = new StringBuilder(getClass().getSimpleName());
 		sb.append(": [");
-		
-		for (int i = 0; i < size && i < array.length; i++) {			
+
+		for (int i = 0; i < size && i < array.length; i++) {
 			sb.append(array[i].toString());
 			if (i < size - 1) {
 				sb.append(", ");

@@ -25,6 +25,9 @@ import com.sun.jna.Pointer;
 import com.sun.jna.PointerType;
 
 
+/**
+ * An implementation of a referenced {@code null}-terminated wide string.
+ */
 public class WStringByReference extends PointerType {
 
 	/**
@@ -66,22 +69,22 @@ public class WStringByReference extends PointerType {
 	 *
 	 * @param value the new string content.
 	 */
-    public void setValue(String value) {
-    	int length = getNumberOfBytes(value);
+	public void setValue(String value) {
+		int length = getNumberOfBytes(value);
 		if (length > getAllocatedSize()) {
 			setPointer(new Memory(length + Native.WCHAR_SIZE));
 		}
-        getPointer().setWideString(0, value);
-    }
+		getPointer().setWideString(0, value);
+	}
 
 	/**
 	 * Gets this {@link WStringByReference}'s content.
 	 *
 	 * @return The content as a {@link String}.
 	 */
-    public String getValue() {
-        return getPointer() == null ? null : getPointer().getWideString(0);
-    }
+	public String getValue() {
+		return getPointer() == null ? null : getPointer().getWideString(0);
+	}
 
 	/**
 	 * Gets the size in bytes allocated to this {@link WStringByReference}
@@ -89,30 +92,30 @@ public class WStringByReference extends PointerType {
 	 *
 	 * @return The allocated size in bytes.
 	 */
-    public long getAllocatedSize() {
-    	if (getPointer() instanceof Memory) {
-    		return Math.max(((Memory) getPointer()).size() - Native.WCHAR_SIZE, 0);
-    	}
-    	return 0;
-    }
-
-    @Override
-	public Object fromNative(Object nativeValue, FromNativeContext context) {
-        // Always pass along null pointer values
-        if (nativeValue == null) {
-            return null;
-        }
-    	setPointer((Pointer) nativeValue);
-    	return this;
+	public long getAllocatedSize() {
+		if (getPointer() instanceof Memory) {
+			return Math.max(((Memory) getPointer()).size() - Native.WCHAR_SIZE, 0);
+		}
+		return 0;
 	}
 
-    @Override
-    public String toString() {
-    	if (getPointer() == null) {
-    		return "null";
-    	}
-    	return getValue();
-    }
+	@Override
+	public Object fromNative(Object nativeValue, FromNativeContext context) {
+		// Always pass along null pointer values
+		if (nativeValue == null) {
+			return null;
+		}
+		setPointer((Pointer) nativeValue);
+		return this;
+	}
+
+	@Override
+	public String toString() {
+		if (getPointer() == null) {
+			return "null";
+		}
+		return getValue();
+	}
 
 	/**
 	 * Calculates the length in bytes of {@code string} as a native
@@ -121,20 +124,20 @@ public class WStringByReference extends PointerType {
 	 * @param string the string to evaluate.
 	 * @return the byte-length of {@code string}.
 	 */
-    public static int getNumberOfBytes(String string) {
-    	if (string == null) {
-    		return 0;
-    	}
-    	if (Native.WCHAR_SIZE == 4) {
-    		return string.codePointCount(0, string.length()) * Native.WCHAR_SIZE;
-    	}
+	public static int getNumberOfBytes(String string) {
+		if (string == null) {
+			return 0;
+		}
+		if (Native.WCHAR_SIZE == 4) {
+			return string.codePointCount(0, string.length()) * Native.WCHAR_SIZE;
+		}
 		final int length = string.length();
 		int byteLength = 0;
-		for (int offset = 0; offset < length; ) {
-		   int codepoint = string.codePointAt(offset);
-		   byteLength += Character.charCount(codepoint) * Native.WCHAR_SIZE;
-		   offset += Character.charCount(codepoint);
+		for (int offset = 0; offset < length;) {
+			int codepoint = string.codePointAt(offset);
+			byteLength += Character.charCount(codepoint) * Native.WCHAR_SIZE;
+			offset += Character.charCount(codepoint);
 		}
-    	return byteLength;
-    }
+		return byteLength;
+	}
 }

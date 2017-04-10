@@ -21,23 +21,24 @@ package net.pms.util.jna;
 import com.sun.jna.FromNativeContext;
 import com.sun.jna.ToNativeContext;
 import com.sun.jna.TypeConverter;
+import net.pms.io.iokit.DefaultKernReturnT;
+import net.pms.io.iokit.KernReturnT;
 
 /**
- * Performs conversion between {@link JnaIntEnum} and native enums.
+ * Performs conversion between {@link KernReturnT} and native kernel return
+ * codes.
  *
  * @author Nadahar
  */
-public class JnaIntEnumConverter implements TypeConverter {
+
+public class KernReturnTConverter implements TypeConverter {
 
 	@Override
 	public Object fromNative(Object input, FromNativeContext context) {
-		if (!JnaIntEnum.class.isAssignableFrom(context.getTargetType())) {
-			throw new IllegalStateException("JnaIntEnumConverter can only convert objects implementing JnaIntEnum");
+		if (!KernReturnT.class.isAssignableFrom(context.getTargetType())) {
+			throw new IllegalStateException("KernReturnTConverter can only convert objects implementing KernReturnT");
 		}
-		@SuppressWarnings("rawtypes")
-		Class targetClass = context.getTargetType();
-		Object[] enumValues = targetClass.getEnumConstants();
-		return ((JnaIntEnum<?>) enumValues[0]).typeForValue((int) input);
+		return DefaultKernReturnT.typeOf((int) input);
 	}
 
 	@Override
@@ -47,6 +48,6 @@ public class JnaIntEnumConverter implements TypeConverter {
 
 	@Override
 	public Integer toNative(Object input, ToNativeContext context) {
-		return ((JnaIntEnum<?>) input).getValue();
+		return ((KernReturnT) input).getValue();
 	}
 }
