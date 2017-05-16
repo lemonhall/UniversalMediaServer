@@ -150,4 +150,18 @@ public class FixedCharArrayByReference extends FixedArrayByReference<Byte> {
 			getPointer().setByte(i * getElementSize(), array[i].byteValue());
 		}
 	}
+
+	@Override
+	public String toString() {
+		StringBuilder sb = new StringBuilder(getClass().getSimpleName());
+		sb.append(": ");
+		if (size > Integer.MAX_VALUE) {
+			sb.append(super.toString());
+		} else if (getPointer() == null) {
+			sb.append("null");
+		} else {
+			sb.append("\"").append(getString()).append("\"");
+		}
+		return sb.toString();
+	}
 }

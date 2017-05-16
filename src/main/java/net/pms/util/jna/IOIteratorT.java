@@ -7,35 +7,52 @@ import com.sun.jna.NativeLong;
  */
 public class IOIteratorT extends IOObjectT {
 
-	/**
-	 * Current serialVersionUID.
-	 */
 	private static final long serialVersionUID = 1L;
 
 	/**
-	 * Create a {@link IOIteratorT} from a native pointer. <b>Don't use this
-	 * unless you know what you're doing</b>.
-	 * <p>
-	 * Generally {@link IOIteratorT} shouldn't be instantiated from Java. Use it
-	 * to hold {@code io_iterator_t} instances returned from function calls.
+	 * Creates a new instance with value {@code 0}.
 	 */
-	/*public IOIteratorT(long peer) {
-		super(peer);
-	}*/
+	public IOIteratorT() {
+	}
 
-	public IOIteratorT() {		
-	}
-	
+	/**
+	 * Creates a new instance with value {@code value}.
+	 *
+	 * @param value the value of the new instance.
+	 */
 	public IOIteratorT(int value) {
-		super(value);		
+		super(value);
 	}
-	
+
+	/**
+	 * Creates a new instance with value {@code value}.
+	 *
+	 * @param value the value of the new instance.
+	 */
 	public IOIteratorT(long value) {
 		super(value);
 	}
-	
+
+	/**
+	 * Creates a new instance with value {@code value}.
+	 *
+	 * @param value the value of the new instance.
+	 */
 	public IOIteratorT(NativeLong value) {
 		super(value.longValue());
 	}
-	
+
+	/**
+	 * Creates a new {@link IOIteratorT} from any {@link MachPortT} or subclass
+	 * instance. Since these object aren't created by Java, they aren't created
+	 * with their proper type and as a result can't be cast from
+	 * {@link MachPortT} to {@link IOIteratorT}. Use this method as a
+	 * replacement for casting.
+	 *
+	 * @param machPort the {@link MachPortT} or subclass to "cast" from.
+	 * @return The new {@link IOIteratorT} instance.
+	 */
+	public static IOIteratorT toIOIteratorT(MachPortT machPort) {
+		return machPort == null ? null : new IOIteratorT(machPort.longValue());
+	}
 }

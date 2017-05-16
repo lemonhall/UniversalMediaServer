@@ -1,11 +1,8 @@
 package net.pms;
 
-import java.awt.image.ImageObserver;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
-import java.util.List;
 import com.sun.jna.Native;
-import com.sun.jna.NativeLong;
 import com.sun.jna.Pointer;
 import com.sun.jna.ptr.DoubleByReference;
 import com.sun.jna.ptr.IntByReference;
@@ -13,18 +10,17 @@ import com.sun.jna.ptr.PointerByReference;
 
 import net.pms.io.iokit.DefaultKernReturnT;
 import net.pms.io.iokit.IOKit;
-import net.pms.io.iokit.IOReturn;
+import net.pms.io.iokit.IOKitUtils;
+import net.pms.io.iokit.IOKitUtils.IOKitException;
 import net.pms.io.iokit.KernReturnT;
 import net.pms.util.jna.CFTypeArrayRef;
 import net.pms.util.jna.CoreFoundation;
 import net.pms.util.jna.IONameT;
 import net.pms.util.jna.IOObjectT;
 import net.pms.util.jna.IOObjectTRef;
-import net.pms.util.jna.PointerArrayByReference;
 import net.pms.util.jna.StringByReference;
 import net.pms.util.jna.TerminatedStringEncodingArray;
 import net.pms.util.jna.UTF16StringByReference;
-import net.pms.util.jna.WStringByReference;
 import net.pms.util.jna.CoreFoundation.CFArrayRef;
 import net.pms.util.jna.CoreFoundation.CFComparisonResult;
 import net.pms.util.jna.CoreFoundation.CFDataRef;
@@ -41,7 +37,6 @@ import net.pms.util.jna.CoreFoundation.CFStringRef;
 import net.pms.util.jna.CoreFoundation.CFTypeRef;
 import net.pms.util.jna.IOIteratorT;
 import net.pms.util.jna.IOIteratorTRef;
-import net.pms.util.jna.MachPortT;
 
 public class Test2 {
 
@@ -53,7 +48,13 @@ public class Test2 {
 		Native.setProtected(true);
 		CoreFoundation coreFoundation = CoreFoundation.INSTANCE;
 		IOKit ioKit = IOKit.INSTANCE;
-		
+
+		try {
+			IOKitUtils.getSystemIdleTiem();
+		} catch (IOKitException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		CFStringRef name = CFStringRef.toCFStringRef("TestName");
 		IONameT objName = new IONameT(true);
 		Pointer p = Pointer.NULL;
@@ -63,15 +64,17 @@ public class Test2 {
 		CFMutableDictionaryRef svcDict = ioKit.IOServiceMatching("IOHIDSystem");
 		IOIteratorTRef iteratorRef = new IOIteratorTRef(true);
 		ret = ioKit.IOServiceGetMatchingServices(IOKit.kIOMasterPortDefault, svcDict, iteratorRef);
+		svcDict.setPointer(Pointer.NULL);
+		svcDict.toString();
 		IOIteratorT iterator = iteratorRef.getValue();
 		ret = ioKit.IOObjectGetClass(iterator, objName);
 		IOObjectT entry = ioKit.IOIteratorNext(iterator);
 		ret = ioKit.IOObjectGetClass(entry, objName);
-		
+
 		IOObjectTRef portRef = new IOObjectTRef(true);
-		ret = ioKit.IOMasterPort(IOKit.kIOMasterPortDefault, portRef);		
+		ret = ioKit.IOMasterPort(IOKit.kIOMasterPortDefault, portRef);
 		ret = ioKit.IOObjectGetClass(portRef.getValue(), objName);
-		
+
 		IntByReference assertionID = new IntByReference();
 		CFStringRef assertionType = CFStringRef.toCFStringRef(IOKit.kIOPMAssertPreventUserIdleSystemSleep);
 		KernReturnT ioReturn = IOKit.INSTANCE.IOPMAssertionCreateWithName(assertionType, IOKit.kIOPMAssertionLevelOn, name, assertionID);
@@ -83,15 +86,19 @@ public class Test2 {
 		System.out.println(assertionID.getValue());
 		CFStringRef details = CFStringRef.toCFStringRef("Testing out IOKit");
 		CFStringRef timeOutAction = CFStringRef.toCFStringRef(IOKit.kIOPMAssertionTimeoutActionTurnOff);
-		KernReturnT ioResult = IOKit.INSTANCE.IOPMAssertionCreateWithDescription(assertionType, name, details, null, null, 10d, timeOutAction, assertionID);
+		/*KernReturnT ioResult = IOKit.INSTANCE.IOPMAssertionCreateWithDescription(assertionType, name, details, null, null, 0, timeOutAction, assertionID);
 		System.out.println(ioResult);
 		System.out.println(Integer.toHexString(ioResult.getValue()));
-		System.out.println(assertionID.getValue());
+		System.out.println(assertionID.getValue());*/
 		CFDictionaryRef dict =
 		IOKit.INSTANCE.IOPMAssertionCopyProperties(assertionID.getValue());
-		CFStringRef key = CFStringRef.toCFStringRef(IOKit.kIOPMAssertionTimeoutActionKey);
-		CFStringRef value = new CFStringRef(coreFoundation.CFDictionaryGetValue(dict, key));
-		System.out.println(value);
+		CFStringRef key = CFStringRef.toCFStringRef("GlobalUniqueID");
+		//CFTypeRef valueType = coreFoundation.CFDictionaryGetValue(dict, key);
+		CFStringRef value = null;
+		/*if (valueType != null) {
+			CFNumberRef numberValue = new CFNumberRef(valueType);
+			System.out.println(numberValue);
+		}*/
 		CFMutableDictionaryRef mutableDict = coreFoundation.CFDictionaryCreateMutableCopy(null, 0, dict);
 		CFMutableDictionaryRef emptyMutableDict = coreFoundation.CFDictionaryCreateMutable(null, 20, null, null);
 		CFNumberRef someInt = CFNumberRef.toCFNumberRef(5);

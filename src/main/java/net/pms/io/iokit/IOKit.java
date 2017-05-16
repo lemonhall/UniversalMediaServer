@@ -24,6 +24,7 @@ import java.util.Map;
 import net.pms.util.jna.CoreFoundation;
 import net.pms.util.jna.CoreFoundation.CFAllocatorRef;
 import net.pms.util.jna.CoreFoundation.CFMutableDictionaryRef;
+import net.pms.util.jna.CoreFoundation.CFMutableDictionaryRefByReferance;
 import net.pms.util.jna.IOConnectT;
 import net.pms.util.jna.IOConnectTRef;
 import net.pms.util.jna.IOIteratorT;
@@ -41,6 +42,7 @@ import net.pms.util.jna.JnaLongEnum;
 import net.pms.util.jna.JnaLongEnumConverter;
 import net.pms.util.jna.KernReturnTConverter;
 import net.pms.util.jna.CoreFoundation.CFDictionaryRef;
+import net.pms.util.jna.CoreFoundation.CFDictionaryRefByReferance;
 import net.pms.util.jna.CoreFoundation.CFStringRef;
 import net.pms.util.jna.CoreFoundation.CFTypeRef;
 import net.pms.util.jna.MachPortT;
@@ -512,7 +514,7 @@ public interface IOKit extends Library {
 	 *
 	 * @since OS X 10.5
 	 */
-	KernReturnT IOPMCopyAssertionsByProcess(CFDictionaryRef assertionsByPID);
+	KernReturnT IOPMCopyAssertionsByProcess(CFDictionaryRefByReferance assertionsByPID);
 
 	/**
 	 * Returns a list of available assertions and their system-wide levels.
@@ -531,7 +533,7 @@ public interface IOKit extends Library {
 	 *
 	 * @since OS X 10.5
 	 */
-	KernReturnT IOPMCopyAssertionsStatus(CFDictionaryRef assertionsStatus);
+	KernReturnT IOPMCopyAssertionsStatus(CFDictionaryRefByReferance assertionsStatus);
 
 	/**
 	 * This is a deprecated call to create a power assertion.
@@ -927,7 +929,7 @@ public interface IOKit extends Library {
 	 * @param masterPort (Output) The returned master port.
 	 * @return A {@link KernReturnT} error code.
 	 */
-	KernReturnT IOMasterPort(MachPortT bootstrapPort, MachPortTRef masterPort);
+	KernReturnT IOMasterPort(MachPortT bootstrapPort, MachPortTRef masterPort); //TODO: (Nad) test
 
 	/**
 	 * Releases an object handle previously returned by {@code IOKitLib}.
@@ -1755,9 +1757,9 @@ public interface IOKit extends Library {
 	 * counterparts.
 	 *
 	 * @param entry the registry entry handle whose property table to copy.
-	 * @param properties a {@code CFDictionary} is created and returned the
-	 *            caller on success. The caller should release with
-	 *            {@link CoreFoundation#CFRelease}.
+	 * @param properties (Output) a {@code CFDictionary} is created and
+	 *            returned to the caller on success. The caller should release
+	 *            with {@link CoreFoundation#CFRelease}.
 	 * @param allocator the {@code CFAllocator} to use when creating the CF
 	 *            containers.
 	 * @param options no options are currently defined.
@@ -1765,7 +1767,7 @@ public interface IOKit extends Library {
 	 */
 	KernReturnT IORegistryEntryCreateCFProperties(
 		IORegistryEntryT entry,
-		CFMutableDictionaryRef properties,
+		CFMutableDictionaryRefByReferance properties,
 		CFAllocatorRef allocator,
 		int options
 	);

@@ -22,8 +22,9 @@ import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-
 import com.sun.jna.DefaultTypeMapper;
+import com.sun.jna.FromNativeContext;
+import com.sun.jna.Function;
 import com.sun.jna.Library;
 import com.sun.jna.Memory;
 import com.sun.jna.Native;
@@ -183,6 +184,20 @@ public interface CoreFoundation extends Library {
 	void CFRelease(CFTypeRef cf);
 
 	/**
+	 * Returns the reference count of a Core Foundation object.
+	 * <p>
+	 * You increment the reference count using the {@link #CFRetain} function,
+	 * and decrement the reference count using the {@link #CFRelease} function.
+	 * <p>
+	 * This function may useful for debugging memory leaks. You normally do not
+	 * use this function, otherwise.
+	 *
+	 * @param cf the {@code CFType} object to examine.
+	 * @return A number representing the reference count of {@code cf}.
+	 */
+	NativeLong CFGetRetainCount(CFTypeRef cf);
+
+	/**
 	 * Determines whether two Core Foundation objects are considered equal.
 	 * <p>
 	 * Equality is something specific to each Core Foundation opaque type. For
@@ -244,7 +259,7 @@ public interface CoreFoundation extends Library {
 	public class CFTypeRef extends PointerType {
 
 		public CFTypeRef() {
-			super();
+			super(new Memory(Native.LONG_SIZE));
 		}
 
 		public CFTypeRef(Pointer p) {
@@ -252,9 +267,23 @@ public interface CoreFoundation extends Library {
 		}
 
 		@Override
+		public Object fromNative(Object nativeValue, FromNativeContext context) {
+			// Always pass along null pointer values
+			if (nativeValue == null) {
+				setPointer(Pointer.NULL);
+				return null;
+			}
+			setPointer((Pointer) nativeValue);
+			return this;
+		}
+
+		@Override
 		public String toString() {
 			if (getPointer() == null) {
 				return "null";
+			}
+			if (getPointer() instanceof Function || getPointer() instanceof Memory) {
+				return "Java initialized, not a real CF type";
 			}
 			CFStringRef description = INSTANCE.CFCopyDescription(this);
 			try {
@@ -262,6 +291,36 @@ public interface CoreFoundation extends Library {
 			} finally {
 				INSTANCE.CFRelease(description);
 			}
+		}
+	}
+
+	public class CFTypeRefByReferance extends PointerByReference {
+
+		protected CFTypeRef instance;
+
+		public CFTypeRef getCFTypeRef() {
+			if (getPointer() == null || getPointer().getPointer(0) == null) {
+				instance = null;
+				return null;
+			}
+			if (instance != null && getPointer().getPointer(0).equals(instance.getPointer())) {
+				return instance;
+			}
+			instance = newInstance();
+			return instance;
+		}
+
+		@Override
+		public String toString() {
+			CFTypeRef tmpInstance = getCFTypeRef();
+			if (tmpInstance == null) {
+				return "null";
+			}
+			return tmpInstance.toString();
+		}
+
+		protected CFTypeRef newInstance() {
+			return new CFTypeRef(getPointer().getPointer(0));
 		}
 	}
 
@@ -282,12 +341,13 @@ public interface CoreFoundation extends Library {
 		 * {@link CFTypeRef} can't be cast to {@link CFNumberRef} if gotten from
 		 * native code because {@link PointerType#fromNative} don't know the
 		 * "real" type and thus calls {@link CFTypeRef}'s constructor instead of
-		 * {@link CFNumberRef}'s constructor. This instantiates a new
+		 * {@link CFNumberRef}'s constructor. This method instantiates a new
 		 * {@link CFNumberRef} and transfers the {@link Pointer} to achieve the
 		 * same result.
 		 *
-		 * @param cfNumber the {@link CFTypeRef} to "cast" to {@link CFNumberRef}.
-		 * @return The {@link CFNumberRef} instance.
+		 * @param cfNumber the {@link CFTypeRef} to "cast" to
+		 *            {@link CFNumberRef}.
+		 * @return The new {@link CFNumberRef} instance.
 		 */
 		public CFNumberRef(CFTypeRef cfNumber) {
 			super(cfNumber == null ? null : cfNumber.getPointer());
@@ -390,6 +450,18 @@ public interface CoreFoundation extends Library {
 		}
 	}
 
+	public class CFNumberRefByReferance extends CFTypeRefByReferance {
+
+		@Override
+		protected CFNumberRef newInstance() {
+			return new CFNumberRef(getPointer().getPointer(0));
+		}
+
+		public CFNumberRef getCFNumberRef() {
+			return (CFNumberRef) getCFTypeRef();
+		}
+	}
+
 	/**
 	 * Returns the type identifier for the {@code CFNumber} opaque type.
 	 *
@@ -489,6 +561,26 @@ public interface CoreFoundation extends Library {
 	boolean CFNumberGetValue(CFNumberRef cfNumber, CFNumberType theType, Pointer value);
 
 	public class CFBooleanRef extends CFTypeRef {
+
+		public CFBooleanRef() {
+			super();
+		}
+
+		public CFBooleanRef(Pointer p) {
+			super(p);
+		}
+	}
+
+	public class CFBooleanRefByReferance extends CFTypeRefByReferance {
+
+		@Override
+		protected CFBooleanRef newInstance() {
+			return new CFBooleanRef(getPointer().getPointer(0));
+		}
+
+		public CFBooleanRef getCFBooleanRef() {
+			return (CFBooleanRef) getCFTypeRef();
+		}
 	}
 
 	/**
@@ -508,9 +600,49 @@ public interface CoreFoundation extends Library {
 
 
 	public class CFArrayRef extends CFTypeRef {
+
+		public CFArrayRef() {
+			super();
+		}
+
+		public CFArrayRef(Pointer p) {
+			super(p);
+		}
+	}
+
+	public class CFArrayRefByReferance extends CFTypeRefByReferance {
+
+		@Override
+		protected CFArrayRef newInstance() {
+			return new CFArrayRef(getPointer().getPointer(0));
+		}
+
+		public CFArrayRef getCFArrayRef() {
+			return (CFArrayRef) getCFTypeRef();
+		}
 	}
 
 	public class CFMutableArrayRef extends CFArrayRef {
+
+		public CFMutableArrayRef() {
+			super();
+		}
+
+		public CFMutableArrayRef(Pointer p) {
+			super(p);
+		}
+	}
+
+	public class CFMutableArrayRefByReferance extends CFTypeRefByReferance {
+
+		@Override
+		protected CFMutableArrayRef newInstance() {
+			return new CFMutableArrayRef(getPointer().getPointer(0));
+		}
+
+		public CFMutableArrayRef getCFMutableArrayRef() {
+			return (CFMutableArrayRef) getCFTypeRef();
+		}
 	}
 
 	/**
@@ -791,12 +923,13 @@ public interface CoreFoundation extends Library {
 		 * {@link CFTypeRef} can't be cast to {@link CFStringRef} if gotten from
 		 * native code because {@link PointerType#fromNative} don't know the
 		 * "real" type and thus calls {@link CFTypeRef}'s constructor instead of
-		 * {@link CFStringRef}'s constructor. This instantiates a new
+		 * {@link CFStringRef}'s constructor. This method instantiates a new
 		 * {@link CFStringRef} and transfers the {@link Pointer} to achieve the
 		 * same result.
 		 *
-		 * @param cfString the {@link CFTypeRef} to "cast" to {@link CFStringRef}.
-		 * @return The {@link CFStringRef} instance.
+		 * @param cfString the {@link CFTypeRef} to "cast" to
+		 *            {@link CFStringRef}.
+		 * @return The new {@link CFStringRef} instance.
 		 */
 		public CFStringRef(CFTypeRef cfString) {
 			super(cfString == null ? null : cfString.getPointer());
@@ -831,7 +964,58 @@ public interface CoreFoundation extends Library {
 		}
 	}
 
+	public class CFStringRefByReferance extends CFTypeRefByReferance {
+
+		@Override
+		protected CFStringRef newInstance() {
+			return new CFStringRef(getPointer().getPointer(0));
+		}
+
+		public CFStringRef getCFStringRef() {
+			return (CFStringRef) getCFTypeRef();
+		}
+	}
+
 	public class CFMutableStringRef extends CFStringRef {
+
+		public CFMutableStringRef() {
+			super();
+		}
+
+		public CFMutableStringRef(Pointer p) {
+			super(p);
+		}
+
+		/**
+		 * Use this as a substitute for cast from any {@link CFTypeRef}
+		 * instance.
+		 * <p>
+		 * {@link CFTypeRef} can't be cast to {@link CFMutableStringRef} if
+		 * gotten from native code because {@link PointerType#fromNative} don't
+		 * know the "real" type and thus calls {@link CFTypeRef}'s constructor
+		 * instead of {@link CFMutableStringRef}'s constructor. This method
+		 * instantiates a new {@link CFMutableStringRef} and transfers the
+		 * {@link Pointer} to achieve the same result.
+		 *
+		 * @param cfString the {@link CFTypeRef} to "cast" to
+		 *            {@link CFMutableStringRef}.
+		 * @return The new {@link CFMutableStringRef} instance.
+		 */
+		public CFMutableStringRef(CFTypeRef cfMutableString) {
+			super(cfMutableString == null ? null : cfMutableString.getPointer());
+		}
+	}
+
+	public class CFMutableStringRefByReferance extends CFTypeRefByReferance {
+
+		@Override
+		protected CFMutableStringRef newInstance() {
+			return new CFMutableStringRef(getPointer().getPointer(0));
+		}
+
+		public CFMutableStringRef getCFMutableStringRef() {
+			return (CFMutableStringRef) getCFTypeRef();
+		}
 	}
 
 	/**
@@ -1470,9 +1654,50 @@ public interface CoreFoundation extends Library {
 	int CFStringGetMostCompatibleMacStringEncoding(int encoding);
 
 	public class CFDictionaryRef extends CFTypeRef {
+
+		public CFDictionaryRef() {
+			super();
+		}
+
+		public CFDictionaryRef(Pointer p) {
+			super(p);
+		}
 	}
 
+	public class CFDictionaryRefByReferance extends CFTypeRefByReferance {
+
+		@Override
+		protected CFDictionaryRef newInstance() {
+			return new CFDictionaryRef(getPointer().getPointer(0));
+		}
+
+		public CFDictionaryRef getCFDictionaryRef() {
+			return (CFDictionaryRef) getCFTypeRef();
+		}
+	}
+
+
 	public class CFMutableDictionaryRef extends CFDictionaryRef {
+
+		public CFMutableDictionaryRef() {
+			super();
+		}
+
+		public CFMutableDictionaryRef(Pointer p) {
+			super(p);
+		}
+	}
+
+	public class CFMutableDictionaryRefByReferance extends CFTypeRefByReferance {
+
+		@Override
+		protected CFMutableDictionaryRef newInstance() {
+			return new CFMutableDictionaryRef(getPointer().getPointer(0));
+		}
+
+		public CFMutableDictionaryRef getCFMutableDictionaryRef() {
+			return (CFMutableDictionaryRef) getCFTypeRef();
+		}
 	}
 
 	/**
@@ -1895,9 +2120,49 @@ public interface CoreFoundation extends Library {
 
 	/** A "buffer" type - holding bytes. */
 	public class CFDataRef extends CFTypeRef {
+
+		public CFDataRef() {
+			super();
+		}
+
+		public CFDataRef(Pointer p) {
+			super(p);
+		}
+	}
+
+	public class CFDataRefByReferance extends CFTypeRefByReferance {
+
+		@Override
+		protected CFDataRef newInstance() {
+			return new CFDataRef(getPointer().getPointer(0));
+		}
+
+		public CFDataRef getCFDataRef() {
+			return (CFDataRef) getCFTypeRef();
+		}
 	}
 
 	public class CFMutableDataRef extends CFDataRef {
+
+		public CFMutableDataRef() {
+			super();
+		}
+
+		public CFMutableDataRef(Pointer p) {
+			super(p);
+		}
+	}
+
+	public class CFMutableDataRefByReferance extends CFTypeRefByReferance {
+
+		@Override
+		protected CFMutableDataRef newInstance() {
+			return new CFMutableDataRef(getPointer().getPointer(0));
+		}
+
+		public CFMutableDataRef getCFMutableDataRef() {
+			return (CFMutableDataRef) getCFTypeRef();
+		}
 	}
 
 	/**
